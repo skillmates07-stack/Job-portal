@@ -26,6 +26,11 @@ export const AppContextProvider = ({ children }) => {
   const [isCompanyLogin, setIsCompanyLogin] = useState(!!companyToken);
   const [companyLoading, setIsCompanyLoading] = useState(false);
 
+  // Admin state
+  const [adminToken, setAdminToken] = useState(localStorage.getItem("adminToken"));
+  const [adminData, setAdminData] = useState(null);
+  const [isAdminLogin, setIsAdminLogin] = useState(!!adminToken);
+
   useEffect(() => {
     if (userToken) {
       localStorage.setItem("userToken", userToken);
@@ -41,6 +46,14 @@ export const AppContextProvider = ({ children }) => {
       localStorage.removeItem("companyToken");
     }
   }, [companyToken]);
+
+  useEffect(() => {
+    if (adminToken) {
+      localStorage.setItem("adminToken", adminToken);
+    } else {
+      localStorage.removeItem("adminToken");
+    }
+  }, [adminToken]);
 
   const fetchUserData = async () => {
     if (!userToken) return;
@@ -193,7 +206,15 @@ export const AppContextProvider = ({ children }) => {
     companyLoading,
     userApplication,
     applicationsLoading,
-    fetchUserApplication
+    fetchUserApplication,
+
+    // Admin
+    adminToken,
+    setAdminToken,
+    adminData,
+    setAdminData,
+    isAdminLogin,
+    setIsAdminLogin,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

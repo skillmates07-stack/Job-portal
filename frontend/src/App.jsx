@@ -15,6 +15,15 @@ import Dashborad from "./pages/Dashborad";
 import AddJobs from "./pages/AddJobs";
 import ManageJobs from "./pages/ManageJobs";
 import ViewApplications from "./pages/ViewApplications";
+import ApplicantDetail from "./pages/ApplicantDetail";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOverview from "./pages/AdminOverview";
+import AdminUsers from "./pages/AdminUsers";
+import AdminUserDetail from "./pages/AdminUserDetail";
+import AdminCompanies from "./pages/AdminCompanies";
+import AdminCompanyDetail from "./pages/AdminCompanyDetail";
+import CompanyOnboarding from "./pages/CompanyOnboarding";
 import { AppContext } from "./context/AppContext";
 
 const App = () => {
@@ -32,11 +41,22 @@ const App = () => {
         <Route path="/candidate-login" element={<CandidatesLogin />} />
         <Route path="/candidate-signup" element={<CandidatesSignup />} />
         <Route path="/recruiter-login" element={<RecruiterLogin />} />
-        <Route path="/recruiter-signup" element={<RecruiterSignup />} />]
+        <Route path="/recruiter-signup" element={<RecruiterSignup />} />
+        <Route path="/company-onboarding" element={<CompanyOnboarding />} />
         <Route path="/dashboard" element={<Dashborad />}>
           <Route path="add-job" element={<AddJobs />} />
           <Route path="manage-jobs" element={<ManageJobs />} />
           <Route path="view-applications" element={<ViewApplications />} />
+          <Route path="applicant/:id" element={<ApplicantDetail />} />
+        </Route>
+        {/* Admin Routes */}
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminDashboard />}>
+          <Route path="overview" element={<AdminOverview />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="users/:id" element={<AdminUserDetail />} />
+          <Route path="companies" element={<AdminCompanies />} />
+          <Route path="companies/:id" element={<AdminCompanyDetail />} />
         </Route>
       </Routes>
     </AppLayout>

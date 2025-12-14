@@ -223,15 +223,74 @@ export const uploadResume = async (req, res) => {
     }
 
     // Upload resume to Cloudinary
-    const uploadedResumeUrl = await cloudinary.uploader.upload(resumeFile.path);
+    const uploadedResumeUrl = await cloudinary.uploader.upload(resumeFile.path, {
+      resource_type: "auto",
+    });
     userData.resume = uploadedResumeUrl.secure_url;
+
+    // Try to extract text from PDF and parse resume data
+    try {
+      const fs = await import("fs");
+      const pdfParse = (await import("pdf-parse")).default;
+      const { parseResume } = await import("../utils/resumeParser.js");
+
+      const pdfBuffer = fs.readFileSync(resumeFile.path);
+      const pdfData = await pdfParse(pdfBuffer);
+      const resumeText = pdfData.text;
+
+      if (resumeText) {
+        const extractedData = parseResume(resumeText);
+
+        // Save all extracted data to user profile
+        userData.contactInfo = extractedData.contactInfo;
+        userData.careerObjective = extractedData.careerObjective;
+        userData.technicalSkills = extractedData.technicalSkills;
+        userData.tools = extractedData.tools;
+        userData.personalSkills = extractedData.personalSkills;
+        userData.education = extractedData.education;
+        userData.projects = extractedData.projects;
+        userData.languages = extractedData.languages;
+        userData.certifications = extractedData.certifications;
+        userData.extraCurricular = extractedData.extraCurricular;
+        userData.areasOfInterest = extractedData.areasOfInterest;
+        userData.hobbies = extractedData.hobbies;
+        userData.projectTypes = extractedData.projectTypes;
+        userData.resumeExtractedAt = new Date();
+        userData.resumeParseScore = extractedData.resumeParseScore;
+
+        console.log("Resume parsed successfully:", {
+          technicalSkills: extractedData.technicalSkills?.length || 0,
+          tools: extractedData.tools?.length || 0,
+          projects: extractedData.projects?.length || 0,
+          education: extractedData.education?.length || 0,
+          languages: extractedData.languages?.length || 0,
+          parseScore: extractedData.resumeParseScore,
+        });
+      }
+    } catch (parseError) {
+      console.error("Resume parsing error (non-critical):", parseError.message);
+      // Continue even if parsing fails - resume is still uploaded
+    }
 
     await userData.save();
 
     return res.status(200).json({
       success: true,
-      message: "Resume uploaded successfully",
+      message: "Resume uploaded and parsed successfully",
       resumeUrl: userData.resume,
+      extractedData: {
+        contactInfo: userData.contactInfo,
+        careerObjective: userData.careerObjective,
+        technicalSkills: userData.technicalSkills,
+        tools: userData.tools,
+        personalSkills: userData.personalSkills,
+        education: userData.education,
+        projects: userData.projects,
+        languages: userData.languages,
+        certifications: userData.certifications,
+        projectTypes: userData.projectTypes,
+        resumeParseScore: userData.resumeParseScore,
+      },
     });
   } catch (error) {
     console.error("Upload error:", error);

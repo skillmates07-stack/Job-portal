@@ -10,6 +10,11 @@ import Loader from "../components/Loader";
 import { motion } from "framer-motion";
 import { slideRigth, SlideUp } from "../utils/Animation";
 
+// Filter options
+const WORK_ARRANGEMENTS = ["Remote", "Onsite", "Hybrid"];
+const JOB_TYPES = ["Full-time", "Part-time", "Internship", "Contract", "Freelance"];
+const EXPERIENCE_LEVELS = ["Fresher", "0-1 Years", "1-3 Years", "3-5 Years", "5+ Years"];
+
 function AllJobs() {
   const [jobData, setJobData] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
@@ -36,6 +41,9 @@ function AllJobs() {
     location: "",
     selectedCategories: [],
     selectedLocations: [],
+    selectedWorkArrangements: [],
+    selectedJobTypes: [],
+    selectedExperienceLevels: [],
   });
 
   useEffect(() => {
@@ -59,12 +67,11 @@ function AllJobs() {
     }
 
     setJobData(filtered);
-    setSearchInput({
+    setSearchInput((prev) => ({
+      ...prev,
       title: isSearched ? searchFilter.title : "",
       location: isSearched ? searchFilter.location : "",
-      selectedCategories: [],
-      selectedLocations: [],
-    });
+    }));
 
     setCurrentPage(1);
   }, [category, jobs, isSearched, searchFilter]);
@@ -98,6 +105,27 @@ function AllJobs() {
       );
     }
 
+    // Work Arrangement filter
+    if (searchInput.selectedWorkArrangements.length > 0) {
+      results = results.filter((job) =>
+        searchInput.selectedWorkArrangements.includes(job.workArrangement)
+      );
+    }
+
+    // Job Type filter
+    if (searchInput.selectedJobTypes.length > 0) {
+      results = results.filter((job) =>
+        searchInput.selectedJobTypes.includes(job.jobType)
+      );
+    }
+
+    // Experience Level filter
+    if (searchInput.selectedExperienceLevels.length > 0) {
+      results = results.filter((job) =>
+        searchInput.selectedExperienceLevels.includes(job.experienceLevel)
+      );
+    }
+
     setFilteredJobs(results);
     setCurrentPage(1);
   }, [jobData, searchInput]);
@@ -125,12 +153,42 @@ function AllJobs() {
     });
   };
 
+  const handleWorkArrangementToggle = (arr) => {
+    setSearchInput((prev) => {
+      const updated = prev.selectedWorkArrangements.includes(arr)
+        ? prev.selectedWorkArrangements.filter((a) => a !== arr)
+        : [...prev.selectedWorkArrangements, arr];
+      return { ...prev, selectedWorkArrangements: updated };
+    });
+  };
+
+  const handleJobTypeToggle = (type) => {
+    setSearchInput((prev) => {
+      const updated = prev.selectedJobTypes.includes(type)
+        ? prev.selectedJobTypes.filter((t) => t !== type)
+        : [...prev.selectedJobTypes, type];
+      return { ...prev, selectedJobTypes: updated };
+    });
+  };
+
+  const handleExperienceLevelToggle = (level) => {
+    setSearchInput((prev) => {
+      const updated = prev.selectedExperienceLevels.includes(level)
+        ? prev.selectedExperienceLevels.filter((l) => l !== level)
+        : [...prev.selectedExperienceLevels, level];
+      return { ...prev, selectedExperienceLevels: updated };
+    });
+  };
+
   const clearAllFilters = () => {
     setSearchInput({
       title: "",
       location: "",
       selectedCategories: [],
       selectedLocations: [],
+      selectedWorkArrangements: [],
+      selectedJobTypes: [],
+      selectedExperienceLevels: [],
     });
     setSearchFilter({ title: "", location: "" });
     setIsSearched(false);
@@ -175,11 +233,10 @@ function AllJobs() {
         >
           {/* Filters */}
           <div
-            className={`lg:w-1/4 p-4 rounded-lg border border-gray-200 ${
-              showFilters ? "block" : "hidden md:block"
-            }`}
+            className={`lg:w-1/4 p-4 rounded-lg border border-gray-200 ${showFilters ? "block" : "hidden md:block"
+              }`}
           >
-            <div className="space-y-6">
+            <div className="space-y-6 max-h-[80vh] overflow-y-auto">
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">
                   Job Title
@@ -206,6 +263,84 @@ function AllJobs() {
                   placeholder="Enter location"
                   className="w-full border border-gray-300 rounded-md px-4 py-2"
                 />
+              </div>
+
+              {/* Work Arrangement Filter */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                  Work Mode
+                </h2>
+                <ul className="space-y-2">
+                  {WORK_ARRANGEMENTS.map((arr, i) => (
+                    <li key={i} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`arr-${i}`}
+                        checked={searchInput.selectedWorkArrangements.includes(arr)}
+                        onChange={() => handleWorkArrangementToggle(arr)}
+                        className="h-4 w-4"
+                      />
+                      <label
+                        htmlFor={`arr-${i}`}
+                        className="ml-2 text-gray-700"
+                      >
+                        {arr}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Job Type Filter */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                  Job Type
+                </h2>
+                <ul className="space-y-2">
+                  {JOB_TYPES.map((type, i) => (
+                    <li key={i} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`type-${i}`}
+                        checked={searchInput.selectedJobTypes.includes(type)}
+                        onChange={() => handleJobTypeToggle(type)}
+                        className="h-4 w-4"
+                      />
+                      <label
+                        htmlFor={`type-${i}`}
+                        className="ml-2 text-gray-700"
+                      >
+                        {type}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Experience Level Filter */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                  Experience Level
+                </h2>
+                <ul className="space-y-2">
+                  {EXPERIENCE_LEVELS.map((level, i) => (
+                    <li key={i} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`exp-${i}`}
+                        checked={searchInput.selectedExperienceLevels.includes(level)}
+                        onChange={() => handleExperienceLevelToggle(level)}
+                        className="h-4 w-4"
+                      />
+                      <label
+                        htmlFor={`exp-${i}`}
+                        className="ml-2 text-gray-700"
+                      >
+                        {level}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               <div>
@@ -237,7 +372,7 @@ function AllJobs() {
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">
                   Locations
                 </h2>
-                <ul className="space-y-2">
+                <ul className="space-y-2 max-h-48 overflow-y-auto">
                   {JobLocations.map((loc, i) => (
                     <li key={i} className="flex items-center">
                       <input
@@ -266,9 +401,8 @@ function AllJobs() {
               <h1 className="text-2xl font-bold text-gray-700 capitalize mb-2">
                 {category === "all"
                   ? "Latest All Jobs"
-                  : `Jobs in ${
-                      category.charAt(0).toUpperCase() + category.slice(1)
-                    }`}
+                  : `Jobs in ${category.charAt(0).toUpperCase() + category.slice(1)
+                  }`}
                 {filteredJobs.length > 0 && (
                   <span className="ml-2 text-gray-500 text-lg">
                     ({filteredJobs.length}{" "}
@@ -323,11 +457,10 @@ function AllJobs() {
                   <button
                     key={i}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`w-10 h-10 rounded-md border text-center cursor-pointer ${
-                      currentPage === i + 1
+                    className={`w-10 h-10 rounded-md border text-center cursor-pointer ${currentPage === i + 1
                         ? "bg-blue-50 text-blue-500 border-blue-300"
                         : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
+                      }`}
                   >
                     {i + 1}
                   </button>

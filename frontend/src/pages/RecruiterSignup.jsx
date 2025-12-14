@@ -38,8 +38,8 @@ const RecruiterSignup = () => {
         setCompanyToken(data.token);
         setCompanyData(data.companyData);
         localStorage.setItem("companyToken", data.token);
-        toast.success(data.message);
-        navigate("/dashboard");
+        toast.success("Account created! Please complete your company profile.");
+        navigate("/company-onboarding");
       } else {
         toast.error(data.message);
       }
@@ -155,9 +155,8 @@ const RecruiterSignup = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex justify-center items-center cursor-pointer ${
-                  loading ? "cursor-not-allowed opacity-50" : ""
-                }`}
+                className={`w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex justify-center items-center cursor-pointer ${loading ? "cursor-not-allowed opacity-50" : ""
+                  }`}
               >
                 {loading ? (
                   <LoaderCircle className="animate-spin h-5 w-5" />

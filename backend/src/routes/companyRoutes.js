@@ -8,6 +8,11 @@ import {
   changeJobVisibility,
   getCompanyJobApplicants,
   changeStatus,
+  updateCompanyProfile,
+  editJob,
+  deleteJob,
+  getApplicantDetail,
+  getJobApplicantsGrouped,
 } from "../controllers/companyController.js";
 import upload from "../utils/upload.js";
 import companyAuthMiddleware from "../middlewares/companyAuthMiddleware.js";
@@ -30,5 +35,15 @@ router.post(
   getCompanyJobApplicants
 );
 router.post("/change-status", companyAuthMiddleware, changeStatus);
+router.post("/update-profile", companyAuthMiddleware, updateCompanyProfile);
+
+// New routes for job management
+router.put("/edit-job/:id", companyAuthMiddleware, editJob);
+router.delete("/delete-job/:id", companyAuthMiddleware, deleteJob);
+
+// Applicant routes
+router.get("/applicant/:id", companyAuthMiddleware, getApplicantDetail);
+router.get("/applications-grouped", companyAuthMiddleware, getJobApplicantsGrouped);
 
 export default router;
+

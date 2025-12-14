@@ -91,10 +91,9 @@ const Dashboard = () => {
                 to={item.path}
                 key={item.id}
                 className={({ isActive }) =>
-                  `flex items-center py-3 px-4 gap-3 transition-colors rounded-l-md ${
-                    isActive
-                      ? "border-r-4 md:border-r-[6px] bg-indigo-50 border-indigo-500 text-indigo-600 font-medium"
-                      : "text-gray-600"
+                  `flex items-center py-3 px-4 gap-3 transition-colors rounded-l-md ${isActive
+                    ? "border-r-4 md:border-r-[6px] bg-indigo-50 border-indigo-500 text-indigo-600 font-medium"
+                    : "text-gray-600"
                   }`
                 }
                 end={item.path === "/dashboard/manage-jobs"}
@@ -112,6 +111,21 @@ const Dashboard = () => {
         </aside>
 
         <main className="flex-1 overflow-auto pl-4 pt-4">
+          {/* Onboarding Incomplete Banner */}
+          {companyData && !companyData.onboardingComplete && (
+            <div className="mr-4 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-amber-800">Complete Your Company Profile</h3>
+                <p className="text-sm text-amber-700">Add your company details to get verified and start posting jobs.</p>
+              </div>
+              <Link
+                to="/company-onboarding"
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition text-sm whitespace-nowrap"
+              >
+                Complete Profile
+              </Link>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>

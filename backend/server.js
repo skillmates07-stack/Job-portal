@@ -8,7 +8,7 @@ import userRoutes from "./src/routes/userRoutes.js";
 import companyRoutes from "./src/routes/companyRoutes.js";
 import jobRoutes from "./src/routes/jobRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
-import Cloudinary from "./src/utils/cloudinary.js";
+import Cloudinary from "./src/utils/Cloudinary.js";
 
 const app = express();
 

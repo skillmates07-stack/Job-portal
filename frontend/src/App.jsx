@@ -24,6 +24,8 @@ import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminCompanies from "./pages/AdminCompanies";
 import AdminCompanyDetail from "./pages/AdminCompanyDetail";
 import CompanyOnboarding from "./pages/CompanyOnboarding";
+import CandidateProfile from "./pages/CandidateProfile";
+import Notifications from "./pages/Notifications";
 import { AppContext } from "./context/AppContext";
 
 const App = () => {
@@ -38,6 +40,8 @@ const App = () => {
         <Route path="/about" element={<About />} />
         <Route path="/apply-job/:id" element={<ApplyJob />} />
         <Route path="/applications" element={<Applications />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/profile" element={<CandidateProfile />} />
         <Route path="/candidate-login" element={<CandidatesLogin />} />
         <Route path="/candidate-signup" element={<CandidatesSignup />} />
         <Route path="/recruiter-login" element={<RecruiterLogin />} />

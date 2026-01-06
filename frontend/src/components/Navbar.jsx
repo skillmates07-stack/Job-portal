@@ -13,6 +13,7 @@ import { toast } from "react-hot-toast";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
+import NotificationsDropdown from "./NotificationsDropdown";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -93,10 +94,9 @@ const Navbar = () => {
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive
-                        ? "text-blue-600 bg-blue-50"
-                        : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
+                    `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
                     }`
                   }
                 >
@@ -114,6 +114,9 @@ const Navbar = () => {
               className="hidden lg:flex items-center gap-4 relative"
               ref={profileMenuRef}
             >
+              {/* Notifications Bell */}
+              <NotificationsDropdown />
+
               <button
                 onClick={toggleProfileMenu}
                 className="flex items-center gap-2 focus:outline-none"
@@ -132,15 +135,21 @@ const Navbar = () => {
                 />
                 <ChevronDown
                   size={16}
-                  className={`transition-transform ${
-                    isProfileMenuOpen ? "rotate-180" : ""
-                  }`}
+                  className={`transition-transform ${isProfileMenuOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
               {isProfileMenuOpen && (
                 <div className="absolute right-0 top-12 mt-2 w-56 origin-top-right rounded-md border border-gray-200 bg-white z-50 overflow-hidden">
                   <div>
+                    <Link
+                      to="/profile"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
+                    >
+                      <UserRound size={16} />
+                      My Profile
+                    </Link>
                     <Link
                       to="/applications"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
@@ -191,9 +200,8 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`lg:hidden fixed inset-0 z-40 transform transition-transform duration-300 ease-in-out ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`lg:hidden fixed inset-0 z-40 transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
         ref={mobileMenuRef}
       >
         <div className="fixed inset-0 backdrop-blur-sm" onClick={toggleMenu} />
@@ -219,10 +227,9 @@ const Navbar = () => {
                     to={item.path}
                     onClick={toggleMenu}
                     className={({ isActive }) =>
-                      `block px-3 py-2 rounded-md text-sm font-medium ${
-                        isActive
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-gray-700 hover:bg-gray-100"
+                      `block px-3 py-2 rounded-md text-sm font-medium ${isActive
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-700 hover:bg-gray-100"
                       }`
                     }
                   >
@@ -255,7 +262,17 @@ const Navbar = () => {
                 <ul className="space-y-1">
                   <li>
                     <Link
-                      to="/applied-jobs"
+                      to="/profile"
+                      onClick={toggleMenu}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      <UserRound size={16} />
+                      My Profile
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/applications"
                       onClick={toggleMenu}
                       className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
                     >

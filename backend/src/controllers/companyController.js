@@ -6,6 +6,7 @@ import Company from "../models/Company.js";
 import Job from "../models/Job.js";
 import JobApplication from "../models/JobApplication.js";
 import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 
 
 export const registerCompany = async (req, res) => {
@@ -213,6 +214,34 @@ export const postJob = async (req, res) => {
     const job = new Job(jobData);
     await job.save();
 
+    // ======= JOB MATCHMAKING - Create notifications for matching candidates =======
+    try {
+      // Find users who have this category in their job preferences and have notifications enabled
+      const matchingUsers = await User.find({
+        "jobPreferences.categories": category,
+        "jobPreferences.notifications": { $ne: false }
+      }).select("_id name jobPreferences");
+
+      // Create notifications for each matching user
+      const notifications = matchingUsers.map(user => ({
+        userId: user._id,
+        type: "job_match",
+        title: `New ${category} job posted!`,
+        message: `${title} at ${req.companyData.name} - ${workArrangement} | ${location || "Remote"}`,
+        jobId: job._id,
+        isRead: false,
+        createdAt: new Date()
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+        console.log(`Created ${notifications.length} job match notifications for category: ${category}`);
+      }
+    } catch (notifError) {
+      // Don't fail the job posting if notifications fail
+      console.error("Error creating job match notifications:", notifError);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Job posted successfully",
@@ -337,7 +366,7 @@ export const changeStatus = async (req, res) => {
       id,
       { status },
       { new: true }
-    );
+    ).populate("jobId", "title");
 
     if (!updatedApplication) {
       return res.status(404).json({
@@ -345,6 +374,32 @@ export const changeStatus = async (req, res) => {
         message: "Job application not found",
       });
     }
+
+    // Create notification for the user about their application status change
+    const jobTitle = updatedApplication.jobId?.title || "Job";
+    let notificationTitle, notificationMessage;
+
+    if (status === "Accepted") {
+      notificationTitle = "🎉 Application Accepted!";
+      notificationMessage = `Congratulations! Your application for "${jobTitle}" has been accepted.`;
+    } else if (status === "Rejected") {
+      notificationTitle = "Application Update";
+      notificationMessage = `Your application for "${jobTitle}" was not selected. Keep applying!`;
+    } else if (status === "Pending") {
+      notificationTitle = "Application Under Review";
+      notificationMessage = `Your application for "${jobTitle}" is being reviewed.`;
+    } else {
+      notificationTitle = "Application Status Updated";
+      notificationMessage = `Your application for "${jobTitle}" status changed to ${status}.`;
+    }
+
+    await Notification.create({
+      userId: updatedApplication.userId,
+      type: "application_status",
+      title: notificationTitle,
+      message: notificationMessage,
+      jobId: updatedApplication.jobId?._id,
+    });
 
     return res.status(200).json({
       success: true,

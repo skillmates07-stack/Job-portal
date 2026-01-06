@@ -63,16 +63,16 @@ const PERSONAL_SKILLS = [
 // ===== PROJECT CATEGORIES =====
 const PROJECT_CATEGORIES = {
     "UI/UX Design": ["ui/ux", "ui ux", "user interface", "user experience", "wireframe", "prototype", "figma", "adobe xd"],
-    "Web Development": ["web app", "website", "frontend", "backend", "full stack", "fullstack", "react", "angular", "vue", "node"],
+    "Web Development": ["web app", "website", "frontend", "backend", "full stack", "fullstack", "react", "angular", "vue", "node", "html", "css", "javascript", "landing page", "e-commerce", "landing", "responsive", "chat application", "chat app", "whatsapp", "messaging"],
     "Mobile Development": ["mobile app", "android", "ios", "react native", "flutter", "mobile development"],
     "AI/ML": ["machine learning", "deep learning", "ai", "artificial intelligence", "nlp", "computer vision", "tensorflow", "pytorch"],
     "Data Science": ["data analysis", "data science", "tableau", "power bi", "visualization", "analytics", "dashboard"],
     "IoT": ["iot", "internet of things", "arduino", "raspberry pi", "embedded", "sensors", "hardware"],
     "Cloud/DevOps": ["aws", "azure", "gcp", "docker", "kubernetes", "devops", "ci/cd", "cloud"],
     "Blockchain": ["blockchain", "crypto", "web3", "smart contract", "solidity", "ethereum"],
-    "Game Development": ["game", "unity", "unreal", "gaming", "3d", "vr", "ar"],
-    "E-commerce": ["e-commerce", "ecommerce", "online store", "shopping", "cart", "payment"],
-    "Education": ["learning platform", "education", "e-learning", "lms", "online course", "teaching"]
+    "Game Development": ["game", "unity", "unreal", "gaming", "3d game", "vr game", "ar game", "game engine"],
+    "E-commerce": ["online store", "shopping", "cart", "payment gateway", "checkout"],
+    "Education": ["learning platform", "e-learning", "lms", "online course", "teaching platform"]
 };
 
 // ===== LANGUAGE PATTERNS =====
@@ -244,26 +244,56 @@ export const extractPersonalSkills = (text) => {
 };
 
 /**
- * Extract education details
+ * Extract education details - IMPROVED
  */
 export const extractEducation = (text) => {
     const education = [];
-    const lowerText = text.toLowerCase();
 
-    // Look for B.Tech or B.E.
-    const btechMatch = text.match(/b\.?(?:tech|e\.?)[^]*?(?:computer|cse|it|ece|eee|mechanical|civil|electronics|electrical)?[^]*?(\d{4}\s*[-–]\s*\d{4})/i);
-    const beMatch = text.match(/b\.e\.?\s+([a-z\s]+engineering)[^]*?(\d{4}\s*[-–]\s*\d{4})/i);
-    const cgpaMatch = text.match(/cgpa[:\s]*(\d+\.?\d*)/i);
+    // Find EDUCATION section first
+    const educationSection = text.match(/education[:\s]*([^]*?)(?=(?:languages?\s*known|skills|projects|experience|certification|work|internship|career|hobbies))/i);
+    const sectionText = educationSection ? educationSection[1] : text;
 
-    if (btechMatch || beMatch) {
-        const match = beMatch || btechMatch;
+    // Look for B.E. Computer Science and Engineering pattern (from user's resume)
+    const beMatch = sectionText.match(/B\.?E\.?\s+([A-Za-z\s]+(?:Engineering|Science))[\s\S]*?([A-Za-z\s,]+(?:University|College|Institute|IIT|NIT))[\s\S]*?(?:Graduated|Graduation|in)?[:\s]*(\d{4})[\s\S]*?(?:CGPA|GPA)?[:\s]*(\d+\.?\d*)?/i);
+    if (beMatch) {
         education.push({
-            degree: beMatch ? "B.E." : "B.Tech",
-            institution: "",
-            year: match[beMatch ? 2 : 1],
-            grade: cgpaMatch ? `CGPA: ${cgpaMatch[1]}` : "",
-            field: text.match(/computer science|cse|information technology|it|electronics|mechanical|electrical/i)?.[0] || ""
+            degree: "B.E.",
+            field: beMatch[1]?.trim() || "Engineering",
+            institution: beMatch[2]?.trim() || "",
+            year: beMatch[3] || "",
+            grade: beMatch[4] ? `CGPA: ${beMatch[4]}` : ""
         });
+    }
+
+    // Look for B.Tech pattern
+    const btechMatch = sectionText.match(/B\.?Tech[\s\S]*?(?:in)?\s*([A-Za-z\s]+)?[\s\S]*?([A-Za-z\s,]+(?:University|College|Institute|IIT|NIT))[\s\S]*?(?:Graduated|Graduation)?[:\s]*(\d{4})[\s\S]*?(?:CGPA|GPA)?[:\s]*(\d+\.?\d*)?/i);
+    if (btechMatch && education.length === 0) {
+        education.push({
+            degree: "B.Tech",
+            field: btechMatch[1]?.trim() || "",
+            institution: btechMatch[2]?.trim() || "",
+            year: btechMatch[3] || "",
+            grade: btechMatch[4] ? `CGPA: ${btechMatch[4]}` : ""
+        });
+    }
+
+    // Fallback: Generic degree + institution + year + CGPA pattern
+    if (education.length === 0) {
+        // Look for degree patterns
+        const genericMatch = sectionText.match(/(?:B\.?E\.?|B\.?Tech|B\.?Sc|M\.?Tech|M\.?Sc|MBA|MCA|BCA)\s*(?:in)?\s*([A-Za-z\s]+)/i);
+        const institutionMatch = sectionText.match(/([A-Za-z\s,]+(?:University|College|Institute|IIT|NIT|School))/i);
+        const yearMatch = sectionText.match(/(?:Graduated|Graduation|Year|in)[:\s]*(\d{4})/i) || sectionText.match(/(\d{4})/);
+        const cgpaMatch = sectionText.match(/(?:CGPA|GPA)[:\s]*(\d+\.?\d*)/i);
+
+        if (genericMatch || institutionMatch) {
+            education.push({
+                degree: genericMatch?.[0]?.split(/\s+in/i)[0]?.trim() || "Degree",
+                field: genericMatch?.[1]?.trim() || "",
+                institution: institutionMatch?.[1]?.trim() || "",
+                year: yearMatch?.[1] || "",
+                grade: cgpaMatch ? `CGPA: ${cgpaMatch[1]}` : ""
+            });
+        }
     }
 
     // Look for HSC / 12th / Higher Secondary
@@ -290,107 +320,171 @@ export const extractEducation = (text) => {
         });
     }
 
-    // Fallback: Look for EDUCATION section and extract entries
-    if (education.length === 0) {
-        const educationSection = text.match(/education[:\s]*([^]*?)(?=(?:skills|projects|experience|certification|work|internship|career|objective))/i);
-        if (educationSection) {
-            const lines = educationSection[1].split(/\n/).filter(l => l.trim().length > 10);
-            lines.forEach(line => {
-                if (line.match(/\d{4}/) && line.match(/(?:cgpa|%|gpa)/i)) {
-                    education.push({
-                        degree: line.match(/(?:b\.?e\.?|b\.?tech|bsc|msc|mba|m\.?tech|bca|mca|diploma)/i)?.[0] || "Degree",
-                        institution: "",
-                        year: line.match(/(\d{4}[-–]\d{4}|\d{4})/)?.[0] || "",
-                        grade: line.match(/(?:cgpa|gpa)[:\s]*(\d+\.?\d*)|(\d+\.?\d*)\s*%/i)?.[0] || "",
-                        field: ""
-                    });
-                }
-            });
-        }
-    }
-
     return education;
 };
 
 /**
- * Extract projects with details
+ * Extract projects - REWRITTEN for Sanjay's resume format
  */
 export const extractProjects = (text) => {
     const projects = [];
 
-    // Look for project sections - more flexible regex that handles INTERNSHIP and various section orders
-    let projectSection = text.match(/(?:projects?|internship)[:\s]*([^]*?)(?=(?:education|certification|extra|co-curricular|achievement|declaration|reference|languages?|hobbies|\n\n\n))/i);
+    // Words that should NEVER be project names (expanded blocklist)
+    const blocklist = [
+        // Section headers
+        'career objective', 'objective', 'summary', 'profile', 'about me',
+        'education', 'skills', 'technical skills', 'skillset', 'tools and technologies',
+        'work experience', 'experience', 'internship', 'employment',
+        'projects', 'certifications', 'certificates', 'achievements',
+        'extra-curricular', 'co-curricular', 'activities', 'hobbies',
+        'languages', 'languages known', 'personal details', 'personal info',
+        'contact', 'contact info', 'declaration', 'references', 'degree',
+        'areas of interest', 'interests', 'soft skills', 'hard skills',
+        'education background', 'personal skills', 'tools and technologies',
+        // Metadata labels
+        'role played', 'duration', 'tools or techniques', 'description',
+        'tools used', 'technology used', 'tech stack',
+        // Contact info
+        'dob', 'date of birth', 'coimbatore', 'bangalore', 'chennai', 'mumbai',
+        'delhi', 'hyderabad', 'pune', 'kolkata', 'email', 'phone', 'mobile',
+        'linkedin', 'github', 'contact info', 'nationality',
+        // Soft skills
+        'problem', 'problem-solving', 'problem solving', 'risk management',
+        'design thinking', 'active listening', 'interpersonal communication',
+        'time management', 'communication', 'leadership', 'teamwork',
+        'creativity', 'adaptability', 'critical thinking', 'solving',
+        // Other
+        'business systems', 'computer science', 'this is an', 'an innovative',
+        'a collaborative', 'the platform', 'figma', 'adobe xd'
+    ];
 
-    // Fallback: If not found, try to find PROJECTS section until end of major content
+    // Patterns that are METADATA, not project titles
+    const metadataPatterns = [
+        /^role\s*played/i,
+        /^duration/i,
+        /^tools?\s*(or|used|and)/i,
+        /^technology/i,
+        /^description/i,
+        /^tech\s*stack/i,
+        /^\(.*\d{4}.*\)/,  // Date in parentheses like (November 2024)
+        /^\d{4}[-–]\d{4}/, // Year range
+        /^[a-z]/,          // Starts with lowercase
+        /^ui\s*ux/i,       // UI UX role
+        /^i\s+(am|aim|have|want)/i,
+        /^creating\b/i,
+        /^building\b/i,
+        /^an?\s+(innovative|online|collaborative)/i,
+        /^the\s+platform/i,
+        /^this\s+is/i,
+        /^\d+\/\d+\/\d+/,  // Date format
+        /^https?:\/\//i,   // URLs
+        /^@/,              // Social handles
+    ];
+
+    // Look for PROJECTS section only
+    const projectSection = text.match(/(?:^|\n)\s*projects?\s*[:\n]([^]*?)(?=(?:\n\s*(?:education|certification|extra[-\s]?curricular|co[-\s]?curricular|achievement|hobbies|languages?\s*known|areas\s*of\s*interest|personal\s*skills|declaration)\s*[:\n])|$)/i);
+
     if (!projectSection) {
-        projectSection = text.match(/projects?[:\s]*([^]*?)$/i);
+        return projects;
     }
 
-    if (projectSection) {
-        const projectText = projectSection[1];
+    const projectText = projectSection[1];
 
-        // Split by common project title patterns
-        // Look for lines that start with project names (capitalized words, potentially with dashes)
-        const projectBlocks = projectText.split(/\n(?=[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s*[-–—])/);
+    // Split by bullet points - these mark project titles
+    const bulletSections = projectText.split(/(?=(?:•|●|\*|➢|→|⦁))/);
 
-        projectBlocks.forEach(block => {
-            if (block.trim().length > 20) {
-                const lines = block.split(/\n/);
-                const titleLine = lines[0] || "";
+    for (const section of bulletSections) {
+        if (section.trim().length < 10) continue;
 
-                // Extract project name from title line
-                const nameMatch = titleLine.match(/^([A-Za-z][^•●\n]{5,60}?)(?:\s*[-–—]|$)/);
+        // Remove the bullet point and get lines
+        const lines = section.replace(/^(?:•|●|\*|➢|→|⦁)\s*/, '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-                // Determine category from content
-                let category = "Other";
-                const lowerBlock = block.toLowerCase();
-                for (const [cat, keywords] of Object.entries(PROJECT_CATEGORIES)) {
-                    if (keywords.some(kw => lowerBlock.includes(kw))) {
-                        category = cat;
-                        break;
-                    }
-                }
+        if (lines.length === 0) continue;
 
-                if (nameMatch && nameMatch[1].trim().length > 3) {
-                    projects.push({
-                        name: nameMatch[1].trim(),
-                        duration: "",
-                        role: "",
-                        tools: [],
-                        description: block.substring(0, 400),
-                        category
-                    });
+        const firstLine = lines[0];
+        const lowerFirst = firstLine.toLowerCase();
+
+        // Skip if it's in blocklist
+        if (blocklist.some(b => lowerFirst === b || lowerFirst.startsWith(b + ':') || lowerFirst.startsWith(b + ' '))) continue;
+
+        // Skip if it matches metadata patterns
+        if (metadataPatterns.some(p => p.test(firstLine))) continue;
+
+        // Skip if it's too short or looks like a single word
+        if (firstLine.length < 5) continue;
+        if (!/\s/.test(firstLine) && firstLine.length < 15) continue; // Single word less than 15 chars
+
+        // This looks like a project title!
+        let projectName = firstLine;
+        let duration = '';
+        let role = '';
+        let tools = [];
+        let description = '';
+
+        // Parse metadata from remaining lines
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            const lowerLine = line.toLowerCase();
+
+            if (lowerLine.startsWith('duration:') || lowerLine.match(/^\([a-z]+\s+\d{4}/i)) {
+                duration = line.replace(/^duration[:\s]*/i, '').replace(/^\(/, '').replace(/\)$/, '').trim();
+            } else if (lowerLine.startsWith('role played:') || lowerLine.startsWith('role:')) {
+                role = line.replace(/^role\s*(?:played)?[:\s]*/i, '').trim();
+            } else if (lowerLine.startsWith('tools') || lowerLine.startsWith('technology') || lowerLine.startsWith('tech stack')) {
+                const toolsText = line.replace(/^(?:tools|technology|tech\s*stack)[^:]*[:\s]*/i, '');
+                tools = toolsText.split(/[,\s]+/).filter(t => t.length > 1 && !/^(and|or|the|used|with)$/i.test(t));
+            } else if (lowerLine.startsWith('description:')) {
+                description = line.replace(/^description[:\s]*/i, '').trim();
+            } else if (line.length > 20 && !lowerLine.match(/^(role|duration|tool|tech|desc)/i)) {
+                // Additional description text
+                if (!description) {
+                    description = line;
+                } else {
+                    description += ' ' + line;
                 }
             }
-        });
-
-        // If no projects found with title pattern, try bullet point splitting
-        if (projects.length === 0) {
-            const bulletItems = projectText.split(/(?:•|●|➢|→|⦁|\*)\s+/);
-            bulletItems.forEach(item => {
-                if (item.length > 40) {
-                    let category = "Other";
-                    const lowerItem = item.toLowerCase();
-                    for (const [cat, keywords] of Object.entries(PROJECT_CATEGORIES)) {
-                        if (keywords.some(kw => lowerItem.includes(kw))) {
-                            category = cat;
-                            break;
-                        }
-                    }
-                    projects.push({
-                        name: item.substring(0, 60).trim(),
-                        duration: "",
-                        role: "",
-                        tools: [],
-                        description: item.substring(0, 300),
-                        category
-                    });
-                }
-            });
         }
+
+        // Determine category
+        const fullText = (projectName + ' ' + description).toLowerCase();
+        const category = determineCategory(fullText);
+
+        projects.push({
+            name: projectName,
+            duration: duration,
+            role: role,
+            tools: tools,
+            description: description.substring(0, 500),
+            category
+        });
     }
 
-    return projects.slice(0, 10); // Limit to 10 projects
+    return projects.slice(0, 10);
+};
+
+/**
+ * Helper function to determine project category
+ */
+const determineCategory = (text) => {
+    if (text.includes('game') || text.includes('gaming') || text.includes('unity') || text.includes('unreal') || text.includes('tournament')) {
+        return "Game Development";
+    } else if (text.includes('mobile') || text.includes('android') || text.includes('ios') || text.includes('flutter') || text.includes('react native')) {
+        return "Mobile Development";
+    } else if (text.includes('machine learning') || text.includes('ai') || text.includes('ml') || text.includes('deep learning') || text.includes('chatbot') || text.includes('llm')) {
+        return "AI/ML";
+    } else if (text.includes('data') || text.includes('analytics') || text.includes('visualization') || text.includes('tableau')) {
+        return "Data Science";
+    } else if (text.includes('iot') || text.includes('arduino') || text.includes('raspberry') || text.includes('embedded')) {
+        return "IoT";
+    } else if (text.includes('ui') || text.includes('ux') || text.includes('figma') || text.includes('design') || text.includes('prototype')) {
+        return "UI/UX Design";
+    } else if (text.includes('e-commerce') || text.includes('ecommerce') || text.includes('shopping') || text.includes('store') || text.includes('amazon')) {
+        return "E-commerce";
+    } else if (text.includes('learning platform') || text.includes('education') || text.includes('teaching') || text.includes('college')) {
+        return "Education";
+    } else {
+        return "Web Development";
+    }
 };
 
 /**
@@ -417,54 +511,194 @@ export const extractLanguages = (text) => {
 };
 
 /**
- * Extract certifications
+ * Extract certifications - FIXED multi-line merging
  */
 export const extractCertifications = (text) => {
     const certifications = [];
 
-    // Look for certification section
-    const certSection = text.match(/certification[s]?[:\s]*([^]*?)(?=(?:education|experience|skills|projects|extra|co-curricular|achievement|declaration|reference|hobbies))/i);
+    // Look for certification section - stop at next section
+    const certSection = text.match(/(?:^|\n)\s*certifications?\s*[:\n]([^]*?)(?=(?:\n\s*(?:hobbies|interests|languages\s*known|education|experience|skills|projects|extra|co-curricular|achievement|declaration)\s*[:\n])|$)/i);
 
-    if (certSection) {
-        const certText = certSection[1];
-        const certItems = certText.split(/(?:•|\*|➢|→|⦁|\n)/);
-
-        certItems.forEach(item => {
-            item = item.trim();
-            if (item.length > 10 && item.length < 200) {
-                const issuerMatch = item.match(/(?:from|by|issued by)\s+([A-Za-z\s]+)/i);
-                certifications.push({
-                    name: item.replace(/(?:from|by|issued by)\s+[A-Za-z\s]+/i, "").trim(),
-                    issuer: issuerMatch ? issuerMatch[1].trim() : "",
-                    date: ""
-                });
-            }
-        });
+    if (!certSection) {
+        return certifications;
     }
+
+    const certText = certSection[1];
+
+    // Split by bullet points ONLY (not newlines) to preserve multi-line certs
+    const certItems = certText.split(/(?:•|●|\*|➢|→|⦁)/);
+
+    certItems.forEach(item => {
+        // Merge all lines and clean up
+        item = item.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+
+        // Skip empty or too short items
+        if (item.length < 20 || item.length > 400) return;
+
+        // Skip items that start with "by" (these are truncated)
+        if (/^by\s+/i.test(item)) return;
+
+        // Skip items that are just headers or random text
+        if (/^certification/i.test(item)) return;
+
+        // The full item IS the certification name
+        let name = item;
+
+        // Extract issuer - look for patterns like "by W3C" or "from Coursera"
+        const issuerMatch = item.match(/(?:by|from|issued by)\s+([A-Za-z0-9\s]+?)(?:\s*\(|$)/i);
+        let issuer = issuerMatch ? issuerMatch[1].trim() : "";
+
+        // Extract duration if present like "(8 months)"
+        const durationMatch = item.match(/\((\d+\s*months?)\)/i);
+        const duration = durationMatch ? durationMatch[1] : "";
+
+        // Extract year if present
+        const yearMatch = item.match(/\b(20\d{2})\b/);
+        const date = yearMatch ? yearMatch[1] : "";
+
+        certifications.push({
+            name: name,
+            issuer: issuer,
+            duration: duration,
+            date: date
+        });
+    });
 
     return certifications.slice(0, 10);
 };
 
 /**
- * Extract extra-curricular activities
+ * Extract work experience - NEW FUNCTION
+ */
+export const extractWorkExperience = (text) => {
+    const positions = [];
+    let totalYears = 0;
+    let internshipCount = 0;
+
+    // Look for WORK EXPERIENCE section
+    const workSection = text.match(/work\s*experience[:\s]*([^]*?)(?=(?:projects?|education|certification|skills|hobbies|languages|extra|achievements?))/i);
+
+    if (workSection) {
+        const workText = workSection[1];
+
+        // Split by job title patterns (e.g., "Front End Developer Intern", "Software Engineer")
+        const jobBlocks = workText.split(/(?=(?:[A-Z][a-z]+\s+){1,4}(?:Developer|Engineer|Intern|Designer|Manager|Analyst|Consultant|Lead))/);
+
+        jobBlocks.forEach(block => {
+            if (block.trim().length > 30) {
+                // Extract job title
+                const titleMatch = block.match(/^([A-Za-z\s]+(?:Developer|Engineer|Intern|Designer|Manager|Analyst|Consultant|Lead))/i);
+
+                // Extract company name and location
+                const companyMatch = block.match(/(?:at|@)?\s*([A-Za-z\s]+(?:Solutions|Technologies|Tech|Inc|Ltd|Company|Corp|Pvt|Services|Systems))[,\s]*([A-Za-z,\s]+)?/i);
+
+                // Extract duration (e.g., "July 2020 - November 2020")
+                const durationMatch = block.match(/([A-Z][a-z]+\s+\d{4})\s*[-–]\s*([A-Z][a-z]+\s+\d{4}|Present)/i);
+
+                // Extract responsibilities
+                const responsibilities = block.match(/(?:•|●|\*|-)\s*([^•●\*\n]+)/g) || [];
+
+                if (titleMatch) {
+                    const isInternship = /intern/i.test(titleMatch[1]);
+                    if (isInternship) internshipCount++;
+
+                    positions.push({
+                        title: titleMatch[1].trim(),
+                        company: companyMatch?.[1]?.trim() || "",
+                        location: companyMatch?.[2]?.trim() || "",
+                        duration: durationMatch ? `${durationMatch[1]} - ${durationMatch[2]}` : "",
+                        description: responsibilities.map(r => r.replace(/[•●\*-]\s*/, '').trim()).join('. ')
+                    });
+
+                    // Calculate approximate years
+                    if (durationMatch) {
+                        const startYear = parseInt(durationMatch[1].match(/\d{4}/)?.[0]);
+                        const endYear = durationMatch[2] === "Present" ? new Date().getFullYear() : parseInt(durationMatch[2].match(/\d{4}/)?.[0]);
+                        if (startYear && endYear) {
+                            totalYears += Math.max(0, endYear - startYear);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    return {
+        years: totalYears,
+        internships: internshipCount,
+        description: "",
+        positions: positions.slice(0, 10)
+    };
+};
+
+/**
+ * Extract extra-curricular activities - FIXED to group activities properly
  */
 export const extractExtraCurricular = (text) => {
     const activities = [];
 
-    const extraSection = text.match(/extra[-\s]?curricular[^:]*[:\s]*([^]*?)(?=(?:education|experience|skills|projects|certification|co-curricular|achievement|declaration|reference|hobbies|language))/i);
+    // Invalid entries to filter out
+    const invalidEntries = [
+        'sports', 'hobbies', 'personal skills', 'areas of interest', 'languages',
+        'extra-curricular', 'co-curricular', 'activities'
+    ];
 
-    if (extraSection) {
-        const extraText = extraSection[1];
-        const items = extraText.split(/(?:•|\*|➢|→|⦁|\n)/);
+    // Try to match extra-curricular OR co-curricular sections
+    const extraSection = text.match(/(?:extra[-\s]?curricular|co[-\s]?curricular)\s*(?:activities)?[^:]*[:\n]([^]*?)(?=(?:\n\s*(?:education|skills|projects|certification|declaration|reference|hobbies|language|personal\s*skills|areas\s*of\s*interest)\s*[:\n])|$)/i);
+
+    if (!extraSection) {
+        return activities;
+    }
+
+    const extraText = extraSection[1];
+
+    // Look for numbered items (1., 2., 3.) or titled items (BRICS - 2023)
+    const numberedPattern = /(?:\d+\.|[A-Z]+[-\s]*\d{4})\s*([^]*?)(?=(?:\d+\.|[A-Z]+[-\s]*\d{4})|$)/g;
+    let match;
+
+    while ((match = numberedPattern.exec(extraText)) !== null) {
+        let content = match[0].trim();
+
+        // Skip if too short
+        if (content.length < 15) continue;
+
+        // Merge all lines into one activity description
+        const cleanContent = content.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+
+        if (cleanContent.length > 15 && cleanContent.length < 500) {
+            activities.push({
+                activity: cleanContent,
+                achievement: ""
+            });
+        }
+    }
+
+    // Fallback: Split by bullet points if no numbered items found
+    if (activities.length === 0) {
+        const items = extraText.split(/(?:•|●|\*|➢|→|⦁)/);
 
         items.forEach(item => {
-            item = item.trim();
-            if (item.length > 10 && item.length < 200) {
-                activities.push({
-                    activity: item,
-                    achievement: ""
-                });
-            }
+            // Merge multiple lines into one
+            const cleanItem = item.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+
+            // Skip too short or too long
+            if (cleanItem.length < 15 || cleanItem.length > 400) return;
+
+            const lowerItem = cleanItem.toLowerCase();
+
+            // Skip if it's just a header
+            if (invalidEntries.some(inv => lowerItem === inv)) return;
+
+            // Skip ALL CAPS headers
+            if (cleanItem === cleanItem.toUpperCase()) return;
+
+            // Skip partial sentences (start with lowercase)
+            if (/^[a-z]/.test(cleanItem)) return;
+
+            activities.push({
+                activity: cleanItem,
+                achievement: ""
+            });
         });
     }
 
@@ -493,22 +727,77 @@ export const extractAreasOfInterest = (text) => {
 };
 
 /**
- * Extract hobbies
+ * Extract hobbies - STRICT VERSION
  */
 export const extractHobbies = (text) => {
     const hobbies = [];
 
-    const hobbiesSection = text.match(/hobbies[:\s]*([^]*?)(?=(?:education|experience|skills|projects|certification|extra|co-curricular|achievement|declaration|reference|language|personal))/i);
+    // Things that should NEVER be hobbies
+    const invalidItems = [
+        // Section headers
+        'personal skills', 'areas of interest', 'extra-curricular', 'extracurricular',
+        'activities', 'languages known', 'co-curricular', 'co curricular',
+        'certification', 'education', 'experience', 'projects', 'declaration',
+        // Skills (not hobbies)
+        'hard work', 'time management', 'communication', 'problem solving',
+        'leadership', 'teamwork', 'creativity', 'wireframe', 'prototyping',
+        'ui ux', 'ui/ux', 'product management', 'user research',
+        // Areas of interest content
+        'designing', 'designs', 'usability', 'testing',
+        // Sports achievements (not hobbies)
+        'district level', 'zonal level', 'state level', 'national level',
+        'runnerup', 'runner-up', 'winner', 'champion', 'championship',
+        // Footer content
+        'date:', 'place:', 'signature', 'coimbatore', 'bangalore', 'chennai',
+        // Languages
+        'english', 'hindi', 'tamil', 'telugu', 'french', 'german', 'malayalam',
+        'r,w,s', 'r, w, s'
+    ];
 
-    if (hobbiesSection) {
-        const items = hobbiesSection[1].split(/(?:•|\*|➢|→|⦁|\n)/);
-        items.forEach(item => {
-            item = item.trim();
-            if (item.length > 3 && item.length < 100) {
-                hobbies.push(item);
-            }
-        });
+    // Valid hobby keywords - must contain one of these
+    const validHobbies = [
+        'reading', 'painting', 'dancing', 'singing', 'music', 'playing games',
+        'traveling', 'travel', 'photography', 'cooking', 'writing', 'chess',
+        'swimming', 'cycling', 'hiking', 'running', 'gym', 'yoga', 'meditation',
+        'gardening', 'drawing', 'crafts', 'movies', 'watching movies', 'watching',
+        'cricket', 'football', 'basketball', 'tennis', 'badminton', 'table tennis',
+        'violin', 'guitar', 'piano', 'drums', 'content writing', 'blogging'
+    ];
+
+    // Match HOBBIES section only - stop at next section
+    const hobbiesSection = text.match(/(?:^|\n)\s*hobbies(?:\s+and\s+|\s*&\s*)?(?:interests)?\s*[:\n]([^]*?)(?=(?:\n\s*(?:languages|declaration|certification|education|projects|skills|experience|personal|areas|extra|co-curricular)\s*[:\n])|$)/i);
+
+    if (!hobbiesSection) {
+        return hobbies;
     }
+
+    const hobbiesText = hobbiesSection[1];
+    const items = hobbiesText.split(/(?:•|●|\*|➢|→|⦁|\n)+/);
+
+    items.forEach(item => {
+        item = item.trim();
+
+        // Skip if too short or too long
+        if (item.length < 4 || item.length > 50) return;
+
+        const lowerItem = item.toLowerCase();
+
+        // Skip if contains any invalid content
+        if (invalidItems.some(invalid => lowerItem.includes(invalid))) return;
+
+        // Skip if it's ALL CAPS (likely a section header)
+        if (item === item.toUpperCase() && item.length > 4) return;
+
+        // Skip if contains numbers (likely an achievement or rating)
+        if (/\d/.test(item)) return;
+
+        // Only add if it matches a valid hobby keyword
+        const isValidHobby = validHobbies.some(h => lowerItem.includes(h));
+
+        if (isValidHobby) {
+            hobbies.push(item);
+        }
+    });
 
     return hobbies.slice(0, 10);
 };
@@ -532,7 +821,7 @@ export const extractProjectTypes = (text) => {
 };
 
 /**
- * Calculate parse confidence score
+ * Calculate parse confidence score - RESTORED higher values
  */
 const calculateParseScore = (extractedData) => {
     let score = 0;
@@ -551,15 +840,20 @@ const calculateParseScore = (extractedData) => {
     if (extractedData.tools?.length > 0) score += 8;
     if (extractedData.personalSkills?.length > 0) score += 7;
 
-    // Education and Projects (25 points max)
-    if (extractedData.education?.length > 0) score += 12;
-    if (extractedData.projects?.length > 0) score += 13;
+    // Education (15 points)
+    if (extractedData.education?.length > 0) score += 15;
 
-    // Additional sections (25 points max)
-    if (extractedData.projectTypes?.length > 0) score += 8;
+    // Experience (15 points)
+    if (extractedData.experience?.positions?.length > 0) score += 15;
+
+    // Projects (15 points)
+    if (extractedData.projects?.length > 0) score += 15;
+
+    // Additional sections (20 points max)
+    if (extractedData.projectTypes?.length > 0) score += 5;
     if (extractedData.languages?.length > 0) score += 5;
-    if (extractedData.certifications?.length > 0) score += 7;
-    if (extractedData.extraCurricular?.length > 0) score += 5;
+    if (extractedData.certifications?.length > 0) score += 5;
+    if (extractedData.hobbies?.length > 0) score += 5;
 
     return Math.min(score, 100);
 };
@@ -575,6 +869,7 @@ export const parseResume = (resumeText) => {
         tools: extractTools(resumeText),
         personalSkills: extractPersonalSkills(resumeText),
         education: extractEducation(resumeText),
+        experience: extractWorkExperience(resumeText),
         projects: extractProjects(resumeText),
         languages: extractLanguages(resumeText),
         certifications: extractCertifications(resumeText),

@@ -140,10 +140,12 @@ export const AppContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (localStorage.getItem("userToken")) {
+    if (userToken) {
       fetchUserApplication();
+    } else {
+      setUserApplication([]);
     }
-  }, []);
+  }, [userToken]);
 
   useEffect(() => {
     fetchJobsData();

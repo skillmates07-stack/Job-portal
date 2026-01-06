@@ -7,6 +7,11 @@ const userSchema = mongoose.Schema({
   image: { type: String, required: true },
   resume: { type: String, default: "" },
 
+  // ===== USER-EDITABLE PROFILE FIELDS =====
+  headline: { type: String, default: "" }, // e.g., "Full Stack Developer"
+  currentCTC: { type: Number, default: 0 }, // Current salary in LPA
+  noticePeriod: { type: String, default: "" }, // Immediate, 15 days, 30 days, 60 days, 90+ days
+
   // ===== EXTRACTED RESUME DATA =====
 
   // Contact Information
@@ -100,6 +105,16 @@ const userSchema = mongoose.Schema({
 
   // Expected CTC
   expectedCTC: { type: Number, default: 0 },
+
+  // Job Preferences for Matchmaking
+  jobPreferences: {
+    categories: [{ type: String }],      // Programming, Data Science, Designing, etc.
+    jobTypes: [{ type: String }],        // Full-time, Part-time, Internship, Contract
+    workModes: [{ type: String }],       // Remote, Onsite, Hybrid
+    locations: [{ type: String }],       // Preferred job locations
+    minSalary: { type: Number, default: 0 },
+    notifications: { type: Boolean, default: true }
+  },
 
   // Resume parsing metadata
   resumeExtractedAt: { type: Date },

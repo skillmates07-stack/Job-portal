@@ -6,6 +6,11 @@ import {
   applyJob,
   getUserAppliedJobs,
   uploadResume,
+  updateJobPreferences,
+  getNotifications,
+  markNotificationRead,
+  deleteNotification,
+  updateProfile,
 } from "../controllers/userController.js";
 import upload from "../utils/upload.js";
 import userAuthMiddleware from "../middlewares/userAuthMiddleware.js";
@@ -24,4 +29,14 @@ router.post(
   uploadResume
 );
 
+// Job Preferences and Notifications
+router.post("/update-job-preferences", userAuthMiddleware, updateJobPreferences);
+router.get("/notifications", userAuthMiddleware, getNotifications);
+router.post("/notifications/:notificationId/read", userAuthMiddleware, markNotificationRead);
+router.delete("/notifications/:notificationId", userAuthMiddleware, deleteNotification);
+
+// Profile Update
+router.post("/update-profile", userAuthMiddleware, updateProfile);
+
 export default router;
+

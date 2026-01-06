@@ -26,4 +26,7 @@ app.use("/job", jobRoutes);
 app.use("/admin", adminRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🌐Server is running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🌐Server is running on port ${PORT}`);
+    console.log(`🤖 Gemini API Key: ${process.env.GEMINI_API_KEY ? 'Loaded (' + process.env.GEMINI_API_KEY.substring(0, 10) + '...)' : 'NOT FOUND'}`);
+});

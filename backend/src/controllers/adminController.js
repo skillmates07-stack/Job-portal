@@ -7,6 +7,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
 import { parseResume } from "../utils/resumeParser.js";
+import { parseResumeWithAI, categorizeProject } from "../utils/aiResumeParser.js";
 import { extractTextWithOCR, isTextExtractionFailed } from "../utils/ocrExtractor.js";
 
 // Admin login with fixed credentials from environment
@@ -78,10 +79,15 @@ export const getAllUsers = async (req, res) => {
 
         let query = {};
 
-        // Filter by skills (case-insensitive partial match)
+        // Filter by skills (case-insensitive partial match across technicalSkills, tools, and personalSkills)
         if (skills) {
-            const skillsArray = skills.split(",").map(s => s.trim());
-            query.skills = { $in: skillsArray.map(s => new RegExp(s, "i")) };
+            const skillsArray = skills.split(",").map(s => s.trim()).filter(s => s);
+            const skillRegexes = skillsArray.map(s => new RegExp(s, "i"));
+            query.$or = [
+                { technicalSkills: { $in: skillRegexes } },
+                { tools: { $in: skillRegexes } },
+                { personalSkills: { $in: skillRegexes } }
+            ];
         }
 
         // Filter by experience years
@@ -98,9 +104,9 @@ export const getAllUsers = async (req, res) => {
             if (maxCTC) query.expectedCTC.$lte = parseInt(maxCTC);
         }
 
-        // Filter by project type
+        // Filter by project type (supports multiple types comma-separated)
         if (projectType) {
-            const projectTypes = projectType.split(",").map(p => p.trim());
+            const projectTypes = projectType.split(",").map(p => p.trim()).filter(p => p);
             query.projectTypes = { $in: projectTypes.map(p => new RegExp(p, "i")) };
         }
 
@@ -280,6 +286,7 @@ export const getCompanyDetails = async (req, res) => {
 
 // Re-parse existing user resume to extract data
 export const reparseUserResume = async (req, res) => {
+    console.log("🔄 REPARSE CALLED! User ID:", req.params.id);
     try {
         const { id } = req.params;
 
@@ -352,7 +359,95 @@ export const reparseUserResume = async (req, res) => {
 
         console.log(`Resume text extracted ${usedOCR ? "(via OCR)" : "(via pdf-parse)"}, length:`, resumeText.length);
 
-        const extractedData = parseResume(resumeText);
+        let extractedData;
+        let usedAI = false;
+
+        console.log("===== ENTERING AI PARSING SECTION =====");
+        console.log("🔑 GEMINI_API_KEY exists:", !!process.env.GEMINI_API_KEY);
+
+        // Try AI-powered parsing first
+        if (process.env.GEMINI_API_KEY) {
+            console.log("Attempting AI-powered resume parsing...");
+            const aiResult = await parseResumeWithAI(resumeText);
+
+            if (aiResult.success) {
+                usedAI = true;
+                const aiData = aiResult.data;
+
+                // Map AI response to existing user model structure
+                extractedData = {
+                    contactInfo: aiData.contact || {},
+                    careerObjective: aiData.careerObjective || "",
+                    technicalSkills: aiData.technicalSkills || [],
+                    tools: aiData.tools || [],
+                    personalSkills: aiData.softSkills || [],
+                    education: (aiData.education || []).map(edu => ({
+                        degree: edu.degree || "",
+                        field: edu.field || "",
+                        institution: edu.institution || "",
+                        year: edu.graduationYear || "",
+                        grade: edu.cgpa || ""  // Maps AI's cgpa to model's grade field
+                    })),
+                    // Work experience - mapped to User model's experience structure
+                    experience: {
+                        years: (aiData.experience || []).length, // rough estimate
+                        internships: 0,
+                        description: "",
+                        positions: (aiData.experience || []).map(exp => ({
+                            title: exp.title || "",
+                            company: exp.company || "",
+                            duration: exp.duration || "",
+                            description: (exp.responsibilities || []).join("; ")
+                        }))
+                    },
+                    // Deduplicate projects by name
+                    projects: [...new Map((aiData.projects || []).map(proj => [
+                        proj.name?.toLowerCase().trim(),
+                        {
+                            name: proj.name || "",
+                            duration: proj.duration || "",
+                            role: proj.role || "",
+                            tools: proj.tools || [],
+                            description: proj.description || "",
+                            category: categorizeProject(proj)
+                        }
+                    ])).values()],
+                    languages: (aiData.languages || []).map(lang => ({
+                        language: lang.language || lang,
+                        proficiency: lang.proficiency || ""
+                    })),
+                    certifications: (aiData.certifications || []).map(cert => ({
+                        name: cert.name || cert,
+                        issuer: cert.issuer || "",
+                        date: cert.year || cert.date || ""
+                    })),
+                    extraCurricular: (aiData.extraCurricular || []).map(ec => ({
+                        activity: ec.activity || ec,
+                        achievement: ec.achievement || ""
+                    })),
+                    // Map coCurricular to achievements field in model
+                    achievements: (aiData.coCurricular || []).map(co => ({
+                        title: co.activity || co,
+                        description: co.description || "",
+                        year: ""
+                    })),
+                    areasOfInterest: aiData.areasOfInterest || [],
+                    hobbies: aiData.hobbies || [],
+                    projectTypes: [...new Set((aiData.projects || []).map(p => categorizeProject(p)))],
+                    resumeParseScore: aiResult.parseScore
+                };
+
+                console.log("AI parsing successful! Score:", aiResult.parseScore, "Experience:", extractedData.experience?.length || 0);
+            } else {
+                console.log("AI parsing failed, falling back to regex:", aiResult.error);
+            }
+        }
+
+        // Fallback to regex-based parsing
+        if (!usedAI) {
+            console.log("Using regex-based parsing...");
+            extractedData = parseResume(resumeText);
+        }
 
         // Save all extracted data to user profile
         user.contactInfo = extractedData.contactInfo;
@@ -361,15 +456,19 @@ export const reparseUserResume = async (req, res) => {
         user.tools = extractedData.tools;
         user.personalSkills = extractedData.personalSkills;
         user.education = extractedData.education;
+        user.experience = extractedData.experience || [];
         user.projects = extractedData.projects;
         user.languages = extractedData.languages;
         user.certifications = extractedData.certifications;
         user.extraCurricular = extractedData.extraCurricular;
+        user.achievements = extractedData.achievements || [];
         user.areasOfInterest = extractedData.areasOfInterest;
         user.hobbies = extractedData.hobbies;
         user.projectTypes = extractedData.projectTypes;
         user.resumeExtractedAt = new Date();
         user.resumeParseScore = extractedData.resumeParseScore;
+        // Note: user.name is NOT updated from resume - it stays as registered name
+        // The parsed name from resume is available in user.contactInfo.name for reference
 
         await user.save();
 

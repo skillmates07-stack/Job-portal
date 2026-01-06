@@ -19,7 +19,7 @@ const AdminUsers = () => {
         maxExperience: "",
         minCTC: "",
         maxCTC: "",
-        projectType: "",
+        projectTypes: [], // Changed to array for multi-select
     });
 
     const fetchUsers = async () => {
@@ -31,7 +31,7 @@ const AdminUsers = () => {
             if (filters.maxExperience) params.append("maxExperience", filters.maxExperience);
             if (filters.minCTC) params.append("minCTC", filters.minCTC);
             if (filters.maxCTC) params.append("maxCTC", filters.maxCTC);
-            if (filters.projectType) params.append("projectType", filters.projectType);
+            if (filters.projectTypes.length > 0) params.append("projectType", filters.projectTypes.join(","));
 
             const { data } = await axios.get(
                 `${backendUrl}/admin/users?${params.toString()}`,
@@ -58,6 +58,17 @@ const AdminUsers = () => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
+    const handleProjectTypeToggle = (type) => {
+        setFilters((prev) => {
+            const currentTypes = prev.projectTypes;
+            if (currentTypes.includes(type)) {
+                return { ...prev, projectTypes: currentTypes.filter(t => t !== type) };
+            } else {
+                return { ...prev, projectTypes: [...currentTypes, type] };
+            }
+        });
+    };
+
     const applyFilters = () => {
         fetchUsers();
         setShowFilters(false);
@@ -70,7 +81,7 @@ const AdminUsers = () => {
             maxExperience: "",
             minCTC: "",
             maxCTC: "",
-            projectType: "",
+            projectTypes: [],
         });
     };
 
@@ -165,22 +176,25 @@ const AdminUsers = () => {
                                 onChange={(e) => handleFilterChange("maxCTC", e.target.value)}
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Project Type
+                        <div className="sm:col-span-2 lg:col-span-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Project Types (select multiple)
                             </label>
-                            <select
-                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                value={filters.projectType}
-                                onChange={(e) => handleFilterChange("projectType", e.target.value)}
-                            >
-                                <option value="">All Types</option>
+                            <div className="flex flex-wrap gap-2">
                                 {projectTypeOptions.map((type) => (
-                                    <option key={type} value={type}>
+                                    <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => handleProjectTypeToggle(type)}
+                                        className={`px-3 py-1.5 text-sm rounded-full border transition ${filters.projectTypes.includes(type)
+                                                ? "bg-indigo-600 text-white border-indigo-600"
+                                                : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400"
+                                            }`}
+                                    >
                                         {type}
-                                    </option>
+                                    </button>
                                 ))}
-                            </select>
+                            </div>
                         </div>
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -227,8 +241,8 @@ const AdminUsers = () => {
                                         <h3 className="font-semibold text-gray-800">{user.name}</h3>
                                         {user.resumeParseScore > 0 && (
                                             <span className={`text-xs px-2 py-0.5 rounded ${user.resumeParseScore >= 70 ? "bg-green-100 text-green-700" :
-                                                    user.resumeParseScore >= 40 ? "bg-yellow-100 text-yellow-700" :
-                                                        "bg-gray-100 text-gray-600"
+                                                user.resumeParseScore >= 40 ? "bg-yellow-100 text-yellow-700" :
+                                                    "bg-gray-100 text-gray-600"
                                                 }`}>
                                                 {user.resumeParseScore}%
                                             </span>

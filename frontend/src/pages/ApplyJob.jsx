@@ -27,6 +27,7 @@ const ApplyJob = () => {
     userToken,
     userData,
     userApplication = [],
+    fetchUserApplication,
   } = useContext(AppContext);
 
   const applyJob = async (jobId) => {
@@ -53,6 +54,10 @@ const ApplyJob = () => {
       if (data.success) {
         toast.success(data.message);
         setAlreadyApplied(true);
+        // Refresh applications in context
+        if (fetchUserApplication) {
+          fetchUserApplication();
+        }
       } else {
         toast.error(data.message);
       }
@@ -143,11 +148,10 @@ const ApplyJob = () => {
           </div>
           <div className="md:mt-6 flex flex-col items-start gap-2.5">
             <button
-              className={`${
-                alreadyApplied
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-              } text-white font-medium py-2 px-6 rounded-md transition duration-200 shadow-sm `}
+              className={`${alreadyApplied
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                } text-white font-medium py-2 px-6 rounded-md transition duration-200 shadow-sm `}
               onClick={() => applyJob(jobData?._id)}
               disabled={alreadyApplied}
             >
